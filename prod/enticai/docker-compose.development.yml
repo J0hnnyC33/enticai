@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  enticai_dev_frontend:
+    build: 
+      context: ${PWD}/frontend
+      dockerfile: Dockerfile.development
+    image: enticai_dev_frontend:latest
+    container_name: enticai_dev_frontend
+    volumes:
+      - ${PWD}/frontend/src:/usr/src/frontend/src
+    env_file:
+      - ${PWD}/frontend/.env.development
+    networks:
+      - enticai_dev_network
+      - enticai_dev_proxy_network
+
+  enticai_dev_backend:
+    build: 
+      context: ${PWD}/backend
+      dockerfile: Dockerfile.development
+    volumes:
+      - ${PWD}/backend/mongo-certs:/etc/ssl/mongo:ro
+      - ${PWD}/backend/src:/usr/src/backend/src
+    user: "node"
+    image: enticai_dev_backend:latest
+    container_name: enticai_dev_backend
+    env_file:
+      - ${PWD}/backend/.env.development
+    networks:
+      - enticai_dev_network
+      - enticai_dev_proxy_network
+      - monitoring_network
+
+networks:
+  enticai_dev_network:
+    external: true
+  enticai_dev_proxy_network:
+    external: true
+  monitoring_network:
+    external: true

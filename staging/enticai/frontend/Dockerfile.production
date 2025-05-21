@@ -1,0 +1,48 @@
+# frontend/Dockerfile
+
+FROM node:20-slim
+
+WORKDIR /usr/src/frontend
+
+# Create non-root user
+RUN groupadd -r frontend && useradd -r -g frontend frontend
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies, serve, and nodemon
+RUN npm install --only=production && \
+    npm install -g serve nodemon && \
+    # Clean npm cache
+    npm cache clean --force
+
+# Copy the rest of the application
+COPY . .
+
+# Set ownership to non-root user
+RUN chown -R frontend:frontend /usr/src/frontend
+
+# Switch to non-root user
+USER frontend
+
+ENV PORT=3000
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+
+# Initial build
+RUN npm run build
+
+# Create a more robust start script that waits for builds to complete
+RUN echo '#!/bin/sh\n\
+npm run build:watch & \
+while true; do \
+  if [ -f "build/index.html" ]; then \
+    serve -s build -l 3000; \
+    exit 0; \
+  fi; \
+  echo "Waiting for initial build to complete..."; \
+  sleep 1; \
+done' > /usr/src/frontend/start.sh && \
+chmod +x /usr/src/frontend/start.sh
+
+CMD ["./start.sh"] 

@@ -1,0 +1,43 @@
+# backend/Dockerfile
+
+FROM node:20-slim
+
+WORKDIR /usr/src/backend
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies including dev dependencies
+RUN npm install && \
+    npm install -g nodemon
+
+# Copy the rest of the application
+COPY . .
+
+# Install system dependencies and set up SSL directory
+RUN apt-get update && \
+    apt-get install -y iputils-ping ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /etc/ssl/mongo
+
+# Copy both CA and client certificates
+COPY mongo-certs/ca.pem /etc/ssl/mongo/ca.pem
+COPY mongo-certs/client.pem /etc/ssl/mongo/client.pem
+
+# Set proper permissions
+RUN chmod 644 /etc/ssl/mongo/ca.pem /etc/ssl/mongo/client.pem && \
+    update-ca-certificates
+
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/mongo/ca.pem
+ENV NODE_ENV=development
+ENV PORT=5000
+
+# Add environment check
+RUN echo "#!/bin/sh\nenv\nexec \"\$@\"" > /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh
+
+EXPOSE 5000
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+# Use nodemon instead of npm start
+CMD ["nodemon", "--watch", "src", "--watch", "index.js", "--ext", "js,json", "src/server.js"] 

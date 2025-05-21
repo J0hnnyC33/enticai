@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  enticai_staging_frontend:
+    build: 
+      context: ${PWD}/frontend
+      dockerfile: Dockerfile.staging
+    image: enticai_staging_frontend:latest
+    container_name: enticai_staging_frontend
+    env_file:
+      - ${PWD}/frontend/.env.staging
+    networks:
+      - enticai_staging_network
+      - enticai_staging_proxy_network
+
+  enticai_staging_backend:
+    build: 
+      context: ${PWD}/backend
+      dockerfile: Dockerfile.staging
+    volumes:
+      - ${PWD}/backend/mongo-certs:/etc/ssl/mongo:ro
+    user: "node"
+    image: enticai_staging_backend:latest
+    container_name: enticai_staging_backend
+    env_file:
+      - ${PWD}/backend/.env.staging
+    networks:
+      - enticai_staging_network
+      - enticai_staging_proxy_network
+      - monitoring_network
+
+networks:
+  enticai_staging_network:
+    external: true
+  enticai_staging_proxy_network:
+    external: true
+  monitoring_network:
+    external: true
